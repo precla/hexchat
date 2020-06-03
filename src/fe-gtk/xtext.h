@@ -22,6 +22,8 @@
 
 #include <gtk/gtk.h>
 
+#include "preview.h"
+
 #define GTK_TYPE_XTEXT              (gtk_xtext_get_type ())
 #define GTK_XTEXT(object)           (G_TYPE_CHECK_INSTANCE_CAST ((object), GTK_TYPE_XTEXT, GtkXText))
 #define GTK_XTEXT_CLASS(klass)      (G_TYPE_CHECK_CLASS_CAST ((klass), GTK_TYPE_XTEXT, GtkXTextClass))
@@ -123,7 +125,10 @@ typedef struct {
 struct _GtkXText
 {
 	GtkWidget widget;
-
+	
+	GThreadPool *preview_thread_pool;
+	struct preview_data *preview_data;
+	
 	xtext_buffer *buffer;
 	xtext_buffer *orig_buffer;
 	xtext_buffer *selection_buffer;

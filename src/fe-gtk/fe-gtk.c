@@ -319,6 +319,7 @@ fe_init (void)
 	palette_load ();
 	key_init ();
 	pixmaps_init ();
+	curl_global_init (CURL_GLOBAL_ALL);
 
 #ifdef HAVE_GTK_MAC
 	gtkosx_application_set_dock_icon_pixbuf (osx_app, pix_hexchat);
@@ -355,6 +356,7 @@ fe_main (void)
 void
 fe_cleanup (void)
 {
+	curl_global_cleanup ();
 	/* it's saved when pressing OK in setup.c */
 	/*palette_save ();*/
 }

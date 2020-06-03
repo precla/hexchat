@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #endif
 
+#include <curl/curl.h>
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 

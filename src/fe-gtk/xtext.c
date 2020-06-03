@@ -555,6 +555,8 @@ gtk_xtext_new (GdkColor palette[], int separator)
 
 	gtk_widget_set_double_buffered (GTK_WIDGET (xtext), FALSE);
 	gtk_xtext_set_palette (xtext, palette);
+	
+	xtext->preview_thread_pool = g_thread_pool_new(preview_thread, NULL, 1, FALSE, NULL);
 
 	return GTK_WIDGET (xtext);
 }
@@ -563,6 +565,12 @@ static void
 gtk_xtext_destroy (GtkObject * object)
 {
 	GtkXText *xtext = GTK_XTEXT (object);
+	
+	if (xtext->preview_thread_pool)
+	{
+		g_thread_pool_free(xtext->preview_thread_pool, FALSE, TRUE);
+		xtext->preview_thread_pool = NULL;
+	}
 
 	if (xtext->add_io_tag)
 	{
@@ -1678,18 +1686,17 @@ gtk_xtext_check_mark_stamp (GtkXText *xtext, GdkModifierType mask)
 }
 
 static int
-gtk_xtext_get_word_adjust (GtkXText *xtext, int x, int y, textentry **word_ent, int *offset, int *len)
+gtk_xtext_get_word_adjust (GtkXText *xtext, int x, int y, textentry **word_ent, unsigned char **word, int *offset, int *len)
 {
 	GSList *slp = NULL;
-	unsigned char *word;
 	int word_type = 0;
 
-	word = gtk_xtext_get_word (xtext, x, y, word_ent, offset, len, &slp);
-	if (word)
+	*word = gtk_xtext_get_word (xtext, x, y, word_ent, offset, len, &slp);
+	if (*word)
 	{
 		int laststart, lastend;
 
-		word_type = xtext->urlcheck_function (GTK_WIDGET (xtext), word);
+		word_type = xtext->urlcheck_function (GTK_WIDGET (xtext), *word);
 		if (word_type > 0)
 		{
 			if (url_last (&laststart, &lastend))
@@ -1800,7 +1807,8 @@ gtk_xtext_motion_notify (GtkWidget * widget, GdkEventMotion * event)
 	if (xtext->urlcheck_function == NULL)
 		return FALSE;
 
-	word_type = gtk_xtext_get_word_adjust (xtext, x, y, &word_ent, &offset, &len);
+	unsigned char *word;
+	word_type = gtk_xtext_get_word_adjust (xtext, x, y, &word_ent, &word, &offset, &len);
 	if (word_type > 0)
 	{
 		if (!xtext->cursor_hand ||
@@ -1833,11 +1841,18 @@ gtk_xtext_motion_notify (GtkWidget * widget, GdkEventMotion * event)
 			xtext->skip_border_fills = FALSE;
 			xtext->render_hilights_only = FALSE;
 			xtext->skip_stamp = FALSE;
+			
+			if(word_type == WORD_URL) {
+				preview_start(xtext, word);
+			} else {
+				preview_end(xtext);
+			}
 		}
 		return FALSE;
 	}
 
 	gtk_xtext_leave_notify (widget, NULL);
+	preview_end(xtext);
 
 	return FALSE;
 }
