@@ -6,6 +6,8 @@
 #include "fe-gtk.h"
 #include "preview.h"
 
+#define max(a,b) ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a > _b ? _a : _b; })
+
 static gboolean
 preview_window_mouse(GtkWidget *widget, GdkEventMotion *event, gpointer user_data)
 {
